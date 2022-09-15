@@ -1,35 +1,33 @@
 {
-  "name": "integration-ovalle",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec ts-node src/index.ts",
-    "watch:serve": "ts-node --inspect src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/devpedrocosta/integration-ovalle.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/devpedrocosta/integration-ovalle/issues"
-  },
-  "homepage": "https://github.com/devpedrocosta/integration-ovalle#readme",
+  "name": "Voalle_integration",
+  "version": "0.0.1",
   "dependencies": {
-    "fastify": "^4.5.3",
-    "fastify-plugin": "^4.2.1"
+    "inversify": "^6.0.1",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.4",
+    "reflect-metadata": "^0.1.13",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6",
+    "55tec_integration_lib": "git+https://bitbucket.org/55TELECOM/55tec_integration_lib.git",
+    "ts-loader": "^9.3.1",
+    "ts-node": "^10.9.1",
+    "tsc-watch": "^5.0.3",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "rm -rf dist/ && tsc && npm run build-func",
+    "postinstall": "npm run build",
+    "watch": "tsc-watch --onSuccess \"npm start\"",
+    "build-func": "webpack --config ./webpack.config.js"
   },
   "devDependencies": {
-    "@types/node": "^18.7.17",
-    "@types/pino": "^7.0.5",
+    "@types/jsonwebtoken": "^8.5.9",
+    "@types/node": "^18.7.18",
+    "@types/request": "^2.48.8",
+    "@types/request-promise": "^4.1.48",
     "nodemon": "^2.0.19",
-    "ts-node": "^10.9.1",
     "typescript": "^4.8.3"
   }
 }
