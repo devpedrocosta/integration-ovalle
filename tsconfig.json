@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "strict": true,
-        "target": "es5",
+        "target": "es6",
         "module": "commonjs",
         "outDir": "./dist",
         "rootDir": "./src",
@@ -15,10 +15,11 @@
         ],
         "moduleResolution": "node",
         "esModuleInterop": true,
+        "skipLibCheck":true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "sourceMap": true,
-        "noFallthroughCasesInSwitch": false,
+        "noFallthroughCasesInSwitch": true,
         "lib": [ "es2020", "dom" ]
     },
     "include": [
@@ -26,7 +27,6 @@
     ],
     "exclude": [
         "node_modules",
-        "**/__test__/*",
-        "src/browser/*"
+        "**/__test__/*"
     ]
 }

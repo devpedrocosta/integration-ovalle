@@ -1,73 +1,104 @@
-import "reflect-metadata";
-import request from "request-promise";
+import { inject, injectable } from "inversify";
 import { URL } from "url";
-import querystring from "querystring";
 
-import { StatusCode } from "55tec_integration_lib/model/protocol";
+import {
+  FindBody as FindResponseBody,
+  ListBody as ListResponseBody,
+  SaveBody as SaveResponseBody,
+} from "55tec_integration_lib/model/protocol/integrator/response";
+import {
+  Request,
+  Body as RequestBody,
+} from "55tec_integration_lib/model/protocol/integrator/request";
+
 import { Entity } from "55tec_integration_lib/model/metadata/action/entity";
-import { Operation } from "55tec_integration_lib/model/metadata/action/operation";
-import { Request} from '55tec_integration_lib/model/protocol/integrator/request';
-import { Response, ResponseError } from '55tec_integration_lib/model/protocol/integrator/response';
+import { Client as BrowserClient } from "55tec_integration_lib/model/protocol/browser";
+import { Context } from "55tec_integration_lib/service";
+import { TicketService } from "./ticket/ticket.service";
+import { CustomerService } from "./customer/customer.service";
 
-export type Handler = (req: Request) => Promise<Response>;
+@injectable()
+export class VoalleService {
+  constructor(
+    @inject(TicketService) private readonly ticketService: TicketService,
+    @inject(CustomerService) private readonly customerService: CustomerService,
+    @inject(BrowserClient) private readonly browserClient: BrowserClient
+  ) {}
 
-export default abstract class Service {
-    protected env = process.env;
-    protected entity: Entity;
-    protected operations: {[op in Operation]?: Handler} = {};
+  public async chooseEvent(info: Request | any) {
+    let ctx = new Context(info);
 
-    constructor(entity?: Entity) {
-        this.entity = !!entity ? entity : Entity.ANY;;
+    const [entity, operation] = info.action.split("/");
+
+    if (entity === "functions") {
+      return this.browserClient.load(operation);
     }
 
-    async request(url: string, method: "get" | "post" | "put" | "patch", body?: object) {
+    switch (info.action) {
+      case "incidents/get-metadata":
+        return this.ticketService.getMetadata();
 
-        if (body && method === "get") {
-            let parsed = new URL(url);
-            body = {
-                ...querystring.parse(parsed.search),
-                ...body
-            };
+      case "incidents/find":
+        return await this.ticketService.getTickets(info.body?.data["id"], ctx);
 
-            url = `${parsed.origin}${parsed.pathname}?${querystring.stringify(body as any)}${parsed.hash}`;
-        }
+      case "incidents/create":
+        return this.handleSaveResult(
+          info.body,
+          await this.ticketService.postTicket(info.body, info.body.data),
+          Entity.INCIDENT
+        );
 
+      case "customers/get-metadata":
+        return this.customerService.getMetadata();
 
-        let result = await request({
-            "rejectUnauthorized": true,
-            "url": url,
-            "method": method,
-            "body": method !== "get" ? JSON.stringify(body) : undefined,
-            "simple": false,
-            "resolveWithFullResponse": true
-        });
-     
-        if (("" + result.statusCode)[0] !== "2") throw new ResponseError(result.body, result.statusCode);
-        if (!result.body) return {};
-        if (typeof result.body === "string") return JSON.parse(result.body.trim() || "{}");
+      case "customer/find":
+        return this.handleSaveResult(
+          info.body,
+          await this.customerService.getCustomer(info.body, info.body.data),
+          Entity.CUSTOMER
+        );
 
-        return result.body;
+    case "customer/create":
+            return this.handleSaveResult(
+              info.body,
+              await this.customerService.postCustomer(info.body, info.body.data),
+              Entity.INCIDENT
+            );
+    
+      default:
+        throw new Error(
+          `Não foi registrada nenhuma ação para o id informado: ${info.action}`
+        );
     }
+  }
 
-    supports(action: string): boolean {
+  handleListResult(data: any[]): ListResponseBody {
+    return {
+      pagination: {
+        page: 0,
+        size: data.length,
+      },
+      data,
+    };
+  }
 
-        let [ entity, operation ] = action.split("/");
+  handleFindResult(
+    requestBody: RequestBody,
+    data: { [f: string]: any; id: string },
+    entity: Entity
+  ): FindResponseBody {
+    let result: FindResponseBody = { data };
+    return result;
+  }
 
-        if (entity !== this.entity) return false;
-
-        return !!this.operations[operation as Operation];
-    }
-
-    async process(request: Request): Promise<Response> {
-
-        let { action } = request;
-
-        if (!this.supports(action)) throw new ResponseError(`Unsupported action: "${request.action}"`, StatusCode.NOT_FOUND);
-
-        let [ , operation ] = action.split("/");
-
-        return this.operations[operation as Operation]!(request);
-    }
-
+  handleSaveResult(
+    requestBody: RequestBody,
+    id: string,
+    entity: Entity
+  ): SaveResponseBody {
+    let result: SaveResponseBody = { id };
+    return result;
+  }
 }
 
+export default VoalleService;
