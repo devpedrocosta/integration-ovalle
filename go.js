@@ -9,13 +9,16 @@ const child = require('child_process');
 
     childs.send({
         id: '45632',
-        action: 'customer/find',
+        action: 'incidents/create',
         body: {
+            projection:['title'],
             options: {
-                subdomain:'https://erp-staging.agetelecom.com.br'
+                subdomain:'erp-staging.agetelecom.com.br',
+                type:'SolicitationCrm'
             },
             data: {
-                "codigo": "08400223608",
+                "description": "Criando solicitação 55PBX",
+                
             },
             credentials: [
                 {type: 'token', value: ["4d0e415e-0bd0-11ea-a050-90b11c2d743a"]

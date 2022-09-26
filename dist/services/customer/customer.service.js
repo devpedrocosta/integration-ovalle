@@ -68,7 +68,7 @@ let CustomerService = class CustomerService {
             return result;
         });
     }
-    postTicket(requestPayload, info) {
+    postCustomer(requestPayload, info) {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = `${requestPayload.options.subdomain}/api/api/events/open_solicitation/`;
             (0, request_1.validateToken)(requestPayload);

@@ -43,9 +43,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TicketService = void 0;
 require("reflect-metadata");
@@ -56,7 +53,7 @@ const http_method_enum_1 = require("../../util/http-method.enum");
 const response_1 = require("55tec_integration_lib/model/protocol/integrator/response");
 const index_1 = require("55tec_integration_lib/model/protocol/index");
 const auth_services_1 = require("../auth/auth.services");
-const model_1 = __importDefault(require("./model"));
+const model_1 = __importStar(require("./model"));
 let TicketService = class TicketService {
     constructor(authService) {
         this.authService = authService;
@@ -66,26 +63,39 @@ let TicketService = class TicketService {
     }
     getTickets(id, ctx) {
         return __awaiter(this, void 0, void 0, function* () {
-            const endpoint = `${ctx.opts.subdomain}/api/api/events/solicitation_list/${id}`;
-            (0, request_1.validateToken)(ctx);
             if (!id)
                 throw new response_1.ResponseError("Missing parameter id", index_1.StatusCode.BAD_REQUEST);
+            const endpoint = `https://${ctx.opts.subdomain}/api/api/events/solicitation_list/${id}`;
+            (0, request_1.validateToken)(ctx);
             let result = yield (0, request_1.default)(endpoint, http_method_enum_1.HttpMethod.GET, this.authService.getToken(), {});
-            return result;
+            const data = (0, request_1.projectionFilter)(ctx.params.projection, result.data);
+            return data;
         });
     }
-    postTicket(requestPayload, info) {
+    solicitationURL(type) {
+        switch (type) {
+            case model_1.SolicitationEnum.Solicitation:
+                return "open_solicitation";
+            case model_1.SolicitationEnum.SolicitationCrm:
+                return "open_solicitation_crm";
+            case model_1.SolicitationEnum.SolicitationSac:
+                return "open_solicitation_sac";
+            default:
+                return "open_solicitation";
+        }
+    }
+    postTicket(requestPayload) {
         return __awaiter(this, void 0, void 0, function* () {
-            const endpoint = `${requestPayload.options.subdomain}/api/api/events/open_solicitation/`;
+            if (!requestPayload.options.type)
+                throw new response_1.ResponseError("Missing parameter type", index_1.StatusCode.BAD_REQUEST);
+            const endpoint = `${requestPayload.options.subdomain}/api/api/events/${this.solicitationURL(requestPayload.options.type)}`;
             (0, request_1.validateToken)(requestPayload);
             let method = http_method_enum_1.HttpMethod.POST;
-            const payload = {
-                client_id: (info === null || info === void 0 ? void 0 : info.call_customer_id) || (info === null || info === void 0 ? void 0 : info.customer_id),
-                description: (info === null || info === void 0 ? void 0 : info.call_description) || (info === null || info === void 0 ? void 0 : info.description),
-                contract_service_tag_id: (info === null || info === void 0 ? void 0 : info.contract_service_tag_id) || "55pbx",
-            };
-            const result = yield (0, request_1.default)(`${endpoint}`, method, this.authService.getToken(), payload);
-            return result || info.id;
+            const result = yield (0, request_1.default)(`https://${endpoint}`, method, this.authService.getToken(), (0, request_1.cleanPayload)(requestPayload === null || requestPayload === void 0 ? void 0 : requestPayload.data));
+            if (result.status === 'ERROR') {
+                throw new response_1.ResponseError(result.message, index_1.StatusCode.INTERNAL_ERROR);
+            }
+            return result.protocol;
         });
     }
 };

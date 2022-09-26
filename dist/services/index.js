@@ -38,19 +38,23 @@ let VoalleService = class VoalleService {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let ctx = new service_1.Context(info);
-            const [entity, operation] = info.action.split('/');
-            if (entity === 'functions') {
+            const [entity, operation] = info.action.split("/");
+            if (entity === "functions") {
                 return this.browserClient.load(operation);
             }
             switch (info.action) {
-                case 'incidents/get-metadata':
+                case "incidents/get-metadata":
                     return this.ticketService.getMetadata();
-                case "incidents/find":
-                    return yield this.ticketService.getTickets((_a = info.body) === null || _a === void 0 ? void 0 : _a.data['id'], ctx);
+                case "incidents/list":
+                    return this.handleListResult(yield this.ticketService.getTickets((_a = info.body) === null || _a === void 0 ? void 0 : _a.data['id'], ctx));
                 case "incidents/create":
-                    return this.handleSaveResult(info.body, yield this.ticketService.postTicket(info.body, info.body.data), entity_1.Entity.INCIDENT);
-                case "customer/find":
+                    return this.handleSaveResult(info.body, yield this.ticketService.postTicket(info.body), entity_1.Entity.INCIDENT);
+                case "customers/get-metadata":
+                    return this.customerService.getMetadata();
+                case "customer/list":
                     return this.handleSaveResult(info.body, yield this.customerService.getCustomer(info.body, info.body.data), entity_1.Entity.CUSTOMER);
+                case "customer/create":
+                    return this.handleSaveResult(info.body, yield this.customerService.postCustomer(info.body, info.body.data), entity_1.Entity.INCIDENT);
                 default:
                     throw new Error(`Não foi registrada nenhuma ação para o id informado: ${info.action}`);
             }
@@ -66,7 +70,8 @@ let VoalleService = class VoalleService {
         };
     }
     handleFindResult(requestBody, data, entity) {
-        let result = { data };
+        let result = { data: data.data };
+        result.wwwRef = { model: data.endpoint };
         return result;
     }
     handleSaveResult(requestBody, id, entity) {
