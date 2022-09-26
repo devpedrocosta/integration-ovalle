@@ -1,13 +1,17 @@
 import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { Body as RequestBody } from "55tec_integration_lib/model/protocol/integrator/request";
-import request, { validateToken } from "../../util/request";
+import request, {
+  cleanPayload,
+  projectionFilter,
+  validateToken,
+} from "../../util/request";
 import { getMetadata } from "../../util/metadata/metadata.decorators";
 import { HttpMethod } from "../../util/http-method.enum";
 import { ResponseError } from "55tec_integration_lib/model/protocol/integrator/response";
 import { StatusCode } from "55tec_integration_lib/model/protocol/index";
 import { AuthService } from "../auth/auth.services";
-import Ticket from "./model";
+import Ticket, { SolicitationEnum } from "./model";
 import { Context } from "55tec_integration_lib/service";
 
 @injectable()
@@ -19,41 +23,54 @@ export class TicketService {
   }
 
   public async getTickets(id: string, ctx: Context) {
-    const endpoint = `${ctx.opts.subdomain}/api/api/events/solicitation_list/${id}`;
-    validateToken(ctx);
-
     if (!id)
       throw new ResponseError("Missing parameter id", StatusCode.BAD_REQUEST);
-
+    const endpoint = `https://${ctx.opts.subdomain}/api/api/events/solicitation_list/${id}`;
+    validateToken(ctx);
     let result = await request(
       endpoint,
       HttpMethod.GET,
       this.authService.getToken(),
       {}
     );
-    return result;
+    const data = projectionFilter(ctx.params.projection, result.data);
+    return data;
   }
 
-  public async postTicket(requestPayload: RequestBody, info: any) {
+  private solicitationURL(type: SolicitationEnum) {
+    switch (type) {
+      case SolicitationEnum.Solicitation:
+        return "open_solicitation";
+      case SolicitationEnum.SolicitationCrm:
+        return "open_solicitation_crm";
+      case SolicitationEnum.SolicitationSac:
+        return "open_solicitation_sac";
+      default:
+        return "open_solicitation";
+    }
+  }
+
+  public async postTicket(requestPayload: RequestBody) {
+   
+    if (!requestPayload.options!.type)
+      throw new ResponseError("Missing parameter type", StatusCode.BAD_REQUEST);
+
     const endpoint = `${
       requestPayload.options!.subdomain
-    }/api/api/events/open_solicitation/`;
+    }/api/api/events/${this.solicitationURL(requestPayload.options!.type)}`;
     validateToken(requestPayload as any);
     let method = HttpMethod.POST;
 
-    const payload = {
-      client_id: info?.call_customer_id || info?.customer_id,
-      description: info?.call_description || info?.description,
-      contract_service_tag_id: info?.contract_service_tag_id || "55pbx",
-    };
-
     const result = await request(
-      `${endpoint}`,
+      `https://${endpoint}`,
       method,
       this.authService.getToken(),
-      payload
+      cleanPayload(requestPayload?.data)
     );
+    if(result.status==='ERROR'){
+      throw new ResponseError(result.message, StatusCode.INTERNAL_ERROR);
+    }
 
-    return result || info.id;
+    return result.protocol;
   }
 }

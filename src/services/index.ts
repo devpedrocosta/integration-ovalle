@@ -16,6 +16,7 @@ import { Client as BrowserClient } from "55tec_integration_lib/model/protocol/br
 import { Context } from "55tec_integration_lib/service";
 import { TicketService } from "./ticket/ticket.service";
 import { CustomerService } from "./customer/customer.service";
+import endpoints from '../util/endpoints';
 
 @injectable()
 export class VoalleService {
@@ -38,20 +39,20 @@ export class VoalleService {
       case "incidents/get-metadata":
         return this.ticketService.getMetadata();
 
-      case "incidents/find":
-        return await this.ticketService.getTickets(info.body?.data["id"], ctx);
+      case "incidents/list":
+        return this.handleListResult(await this.ticketService.getTickets(info.body?.data['id'],ctx));
 
       case "incidents/create":
         return this.handleSaveResult(
           info.body,
-          await this.ticketService.postTicket(info.body, info.body.data),
+          await this.ticketService.postTicket(info.body),
           Entity.INCIDENT
         );
 
       case "customers/get-metadata":
         return this.customerService.getMetadata();
 
-      case "customer/find":
+      case "customer/list":
         return this.handleSaveResult(
           info.body,
           await this.customerService.getCustomer(info.body, info.body.data),
@@ -84,10 +85,13 @@ export class VoalleService {
 
   handleFindResult(
     requestBody: RequestBody,
-    data: { [f: string]: any; id: string },
+    data: any,
     entity: Entity
   ): FindResponseBody {
-    let result: FindResponseBody = { data };
+   
+    let result: FindResponseBody = { data:data.data };
+     result.wwwRef = { model: data.endpoint };
+
     return result;
   }
 
