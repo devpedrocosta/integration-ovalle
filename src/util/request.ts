@@ -3,59 +3,98 @@ import { HttpMethod } from "./http-method.enum";
 import urlLib from "url";
 import qs from "querystring";
 import { Context } from "55tec_integration_lib/service";
-import {Credential} from "55tec_integration_lib/model/protocol/integrator/credential";
+import { Credential } from "55tec_integration_lib/model/protocol/integrator/credential";
+import { Projection } from "55tec_integration_lib/model/protocol/integrator/request";
 
 export class RequestError extends Error {
+  code: number;
 
-    code: number;
-
-    constructor(message: string, code: number = 500) {
-        super(message);
-        this.code = code;
-    }
-
+  constructor(message: string, code: number = 500) {
+    super(message);
+    this.code = code;
+  }
 }
 
-export default async (url: string, method: HttpMethod = HttpMethod.GET,token:string, body: {[k: string]: any} = {}) => {
+export default async (
+  url: string,
+  method: HttpMethod = HttpMethod.GET,
+  token: string,
+  body: { [k: string]: any } = {}
+) => {
+  if (body && method === "get") {
+    let parsedUrl = urlLib.parse(url);
 
-    if(body && method === "get") {
-        let parsedUrl = urlLib.parse(url);
+    url = `${parsedUrl.protocol}//${parsedUrl.host}${
+      parsedUrl.pathname
+    }?${qs.stringify({
+      ...qs.parse(parsedUrl.query || ""),
+      ...body,
+    })}`;
 
-        url = `${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}?${qs.stringify({
-            ...(qs.parse(parsedUrl.query || "")),
-            ...body
-        })}`;
+    body = {};
+  }
 
-        body = {};
+  let result = await request({
+    rejectUnauthorized: true,
+    url: url,
+    method: method,
+    body: method !== HttpMethod.GET ? JSON.stringify(body) : undefined,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization-token": token,
+    },
+    simple: false,
+    resolveWithFullResponse: true,
+  });
+  if (("" + result.statusCode)[0] !== "2")
+    throw new RequestError(result.body, result.statusCode);
+  if (!result.body) return {};
+  if (typeof result.body === "string")
+    result = JSON.parse(result.body.trim() || "{}");
+
+  return result;
+};
+
+export function validateToken(ctx: Context) {
+  const token = ctx.credentials!.find((c: Credential) => c.type === "token");
+
+  if (!token) {
+    const err = new Error("Missing OAuth token");
+    //@ts-ignore
+    err.code = 401;
+    throw err;
+  }
+}
+
+export function cleanPayload(obj:any) {
+  for (var propName in obj) {
+    if (obj[propName] === null || obj[propName] === undefined || obj[propName] === '') {
+      delete obj[propName];
     }
-
-    let result = await request({
-        "rejectUnauthorized": true,
-        "url": url,
-        "method": method,
-        "body": method !== HttpMethod.GET ? JSON.stringify(body) : undefined,
-        "headers": {
-            "Content-Type": "application/json",
-            "Authorization-token": token
-        },
-        "simple": false,
-        "resolveWithFullResponse": true
-    });
-    if (("" + result.statusCode)[0] !== "2") throw new RequestError(result.body, result.statusCode);
-    if (!result.body) return {};
-    if (typeof result.body === "string") result = JSON.parse(result.body.trim() || "{}");
-
-    return result;
+  }
+  return obj
 }
 
 
-export function validateToken(ctx: Context){
-    const token = ctx.credentials!.find((c: Credential) => c.type === "token");
 
-    if (!token) {
-        const err = new Error("Missing OAuth token");
-        //@ts-ignore
-        err.code = 401;
-        throw err;
-    }
+export function projectionFilter(projection: Projection, obj: any) {
+    return obj.map((item:any)=>{
+       return Object.keys(Object.keys(
+        projection.toString()
+          .split(",")
+          .map((x) => x.split(":").map((y) => y.trim()))
+          .reduce((a:Partial<any>, x) => {
+            a[x[0]] = x[1];
+            return a;
+          }, {})
+      )
+      .reduce((a:Partial<any>, e) => {
+        a[e] = 1;
+        return a;
+      }, {})).reduce((r:Partial<any>,k) => {
+            r[k] = item[k] || '';
+            return r;
+          },{});
+    })
+
 }
