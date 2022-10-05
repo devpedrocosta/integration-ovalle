@@ -1,0 +1,56 @@
+definitions:
+  steps:
+    - step: &schedule-deploy
+        name: schedule-deploy
+        script:
+          - export KEY=$DEPLOY_SCHEDULER_KEY
+          - export URL=$DEPLOY_SCHEDULER_URL
+          - export SCHEDULE_DATE=$DEPLOY_SCHEDULE_DATE
+          - export REPOSITORY=$BITBUCKET_REPO_SLUG
+          - export BRANCH=$BITBUCKET_BRANCH
+          - export ENV=$BITBUCKET_DEPLOYMENT_ENVIRONMENT
+          - echo "Scheduling deploy of $BRANCH on $URL - $ENV"
+          - >
+            OUTPUT_FILE=$(mktemp);
+            HTTP_CODE=$(curl -m 20 -X POST "$URL/api/deploy/new" -H "Content-Type:application/json" -H "key:$KEY" -d "{\"env\": \"$ENV\", \"revision\": \"$BRANCH\", \"repository\": \"$REPOSITORY\", \"restart\": true, \"schedule\": \"$SCHEDULE_DATE\"}" --output $OUTPUT_FILE --write-out "%{http_code}" "$@");
+            cat $OUTPUT_FILE;
+            echo "\r\n";
+            if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]] ; then
+              echo "Failed with HTTP code $HTTP_CODE";
+              exit 22
+            fi
+
+pipelines:
+  custom:
+    schedule-deploy-development:
+      - variables:
+          - name: DEPLOY_SCHEDULE_DATE
+      - step:
+          deployment: development
+          <<: *schedule-deploy
+    schedule-deploy-testing:
+      - variables:
+          - name: DEPLOY_SCHEDULE_DATE
+      - step:
+          deployment: testing
+          <<: *schedule-deploy
+    schedule-deploy-staging:
+      - variables:
+          - name: DEPLOY_SCHEDULE_DATE
+      - step:
+          deployment: staging
+          <<: *schedule-deploy
+  branches:
+    development:
+      - step:
+          deployment: development
+          <<: *schedule-deploy
+#    testing:
+#      - step:
+#          deployment: testing
+#          <<: *schedule-deploy
+#    master:
+#      - step:
+#          deployment: staging
+#          <<: *schedule-deploy
+

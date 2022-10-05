@@ -1,0 +1,13 @@
+[
+    {
+        "command": "npm",
+        "description": "Atualizando dependências",
+        "args": "install"
+    },
+    {
+        "command": "npm",
+        "description": "Compilando nova versão",
+        "args": "run build"
+    }
+]
+
