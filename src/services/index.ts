@@ -39,7 +39,7 @@ export class VoalleService {
       case "incidents/get-metadata":
         return this.ticketService.getMetadata();
 
-      case "incidents/list":
+      case "incidents/find":
         return this.handleListResult(await this.ticketService.getTickets(info.body?.data['id'],ctx));
 
       case "incidents/create":
@@ -63,7 +63,7 @@ export class VoalleService {
             return this.handleSaveResult(
               info.body,
               await this.customerService.postCustomer(info.body, info.body.data),
-              Entity.INCIDENT
+              Entity.CUSTOMER
             );
     
       default:

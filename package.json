@@ -18,6 +18,7 @@
   },
   "scripts": {
     "start": "node dist/index.js",
+    "test": "jest  --config ./jest.config.js --no-cache --passWithNoTests",
     "build": "rm -rf dist/ && tsc && npm run build-func",
     "postinstall": "npm run build",
     "watch": "tsc-watch --onSuccess \"npm start\"",
@@ -31,8 +32,11 @@
     "@types/request": "^2.48.8",
     "@types/request-promise": "^4.1.48",
     "@types/uuid": "^8.3.4",
+    "jest": "^25.1.0",
     "nodemon": "^2.0.19",
+    "ts-jest": "^25.2.0",
     "typescript": "^4.8.3",
+    "undefined": "^0.1.0",
     "uuid": "^9.0.0"
   }
 }

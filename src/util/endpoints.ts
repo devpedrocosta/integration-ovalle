@@ -13,10 +13,8 @@ const URL = {
 
 
 export default function endpoints (environment: Environment, patch:string):string {
-    console.log
     let url;
     if (!environment || !Object.values(Environment).includes(environment)) url = URL[Environment.PRODUCTION];
     else url = URL[environment];
-debug
     return `${url}/${patch}}`;
 }

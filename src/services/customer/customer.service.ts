@@ -38,14 +38,12 @@ export class CustomerService {
   public async postCustomer(requestPayload: RequestBody, info: any) {
     const endpoint = `${
       requestPayload.options!.subdomain
-    }/api/api/events/open_solicitation/`;
+    }/api/api/events/new_suspect/`;
     validateToken(requestPayload as any);
     let method = HttpMethod.POST;
 
     const payload = {
-      client_id: info?.call_customer_id || info?.customer_id,
-      description: info?.call_description || info?.description,
-      contract_service_tag_id: info?.contract_service_tag_id || "55pbx",
+      ...requestPayload.data
     };
 
     const result = await request(
@@ -55,6 +53,6 @@ export class CustomerService {
       payload
     );
 
-    return result || info.id;
+    return result.client_id||result.id ;
   }
 }
