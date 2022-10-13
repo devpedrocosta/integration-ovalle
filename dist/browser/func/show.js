@@ -1,1 +1,0 @@
-var func;(()=>{"use strict";func=function(e,t,n="",r){return new Promise(((e,r)=>{try{let e={forceNewTab:!0,href:""};"incidents"===t&&(e.href=`/Ticket/Edit/${n}`),"customers"===t&&(e.href=`/Person/Edit/${n}`),window.parent.postMessage({action:"open-tab",payload:e},"*")}catch(e){r(e)}}))}})();

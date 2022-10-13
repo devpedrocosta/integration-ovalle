@@ -1,1 +1,0 @@
-var func;(()=>{"use strict";func=function(n){return new Promise((n=>n()))}})();
