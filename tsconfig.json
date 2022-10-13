@@ -14,13 +14,16 @@
             "jest"
         ],
         "moduleResolution": "node",
+        "resolveJsonModule": true,
         "esModuleInterop": true,
-        "skipLibCheck":true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "sourceMap": true,
-        "noFallthroughCasesInSwitch": true,
-        "lib": [ "es2020", "dom" ]
+        "noFallthroughCasesInSwitch": false,
+        "lib": [ "es2020", "dom" ],
+        "useUnknownInCatchVariables": false,
+        "noImplicitAny": false,
+        "skipLibCheck": true
     },
     "include": [
         "src/**/*"
